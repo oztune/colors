@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Color rebaser for LESS css by appFigures</title>
+
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css" rel="stylesheet">
+
+        <style>
+            input[type="color"] {
+                width: 20px;
+            }
+        </style>
+    </head>
+    <body ng-app="rebase">
+        <div class="container" ng-controller="main" ng-cloak>
+            <input type="color" ng-model="base" />
+            <input type="text" placeholder="Base color (#000000)" ng-model="base" />
+            <input type="color" ng-model="target" />
+            <input type="text" placeholder="Target color (#000000)" ng-model="target" />
+            <br />
+            <input type="text" placeholder="@base-variable-name" ng-model="baseName" />
+            <pre>{{getCode()||'Couldn\'t parse colors'}}</pre>
+        </div>
+
+        <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.6/angular.min.js"></script>
+        <script type="text/javascript" src="https://raw.github.com/gka/chroma.js/master/chroma.js"></script>
+
+        <script type="text/javascript">
+            angular.module('rebase', [])
+            .controller('main', function ($scope) {
+
+                // Persistent state
+                angular.forEach(['base', 'target', 'baseName'], function (key, value) {
+                    $scope[key] = localStorage[key];
+
+                    $scope.$watch(key, function (value) {
+                        localStorage[key] = value || '';
+                    });
+                });
+
+                function parseColor(color) {
+                    var out;
+
+                    if (!color) return null;
+
+                    try {
+                        out = chroma.color(color);
+                    } catch (e) {
+                        out = null;
+                    } finally {
+                        return out;
+                    }
+                }
+
+                function round(num) {
+                    return Math.round(num * 10000) / 10000;
+                }
+
+                $scope.getCode = function () {
+                    var baseColor = parseColor($scope.base);
+                    var targetColor = parseColor($scope.target);
+
+                    if (!baseColor || !targetColor) return null;
+
+                    var baseHsl = baseColor.hsl();
+                    var targetHsl = targetColor.hsl();
+
+                    var spin = round(targetHsl[0] / baseHsl[0]);
+                    var saturate = round(targetHsl[1] / baseHsl[1]);
+                    var lighten = round(targetHsl[2] / baseHsl[2]);
+
+                    var base = $scope.baseName || '{{COLOR}}';
+
+                    target = [];
+
+                    target.push('hue(' + base + ') * ' + spin);
+                    target.push('saturation(' + base + ') * ' + saturate);
+                    target.push('lightness(' + base + ') * ' + lighten);
+
+                    return 'hsl(' + target.join(', ') + ')';
+                };
+            });
+        </script>
+    </body>
+</html>
